@@ -28,6 +28,18 @@ object ExampleSparkJob extends SparkJob {
 
     sc.cassandraTable("test", "kv").saveToCassandra("test", "copykv")
     sc.cassandraTable("test", "copykv").take(10)
+
+    //dse hadoop fs -mkdir /test_spark_sql_cfs
+    //dse hadoop fs -copyFromLocal people.json /test_spark_sql_cfs/
+    val sqlc = new org.apache.spark.sql.SQLContext(sc)
+    import sqlc._
+    import sqlc.implicits._
+    val inpath = "cfs:///test_spark_sql_cfs/people.json"
+    val cfs_people = sqlc.jsonFile(inpath)
+    cfs_people.printSchema()
+    cfs_people.registerTempTable("cfs_people")
+    val cfs_teenagers = sqlc.sql("SELECT name FROM cfs_people WHERE age >= 13 AND age <= 19")
+    cfs_teenagers.collect().foreach(println)
   }
 
   override def validate(sc: SparkContext, config: Config): SparkJobValidation = {
